@@ -1,5 +1,7 @@
 import os
 from functools import cached_property
+from logging import exception
+
 import pandas as pd
 from dotenv import load_dotenv
 from typing import List
@@ -19,11 +21,12 @@ API_URL = "https://api.monday.com/v2"
 HEADERS = {"Authorization": API_KEY}
 
 EXCLUDED_BOARD_IDS = [
-    # '1922161518', #                          HR_TMP Clients
-    # '1922060379', #              HR_TMP Invoices Receivable
-    # '1915224762', #                 HR_TMP Invoices Payable
-    # '1915136720', #                          HR_TMP Booking
+    '1922161518',  # HR_TMP Clients
+    '1922060379',  # HR_TMP Invoices Receivable
+    '1915224762',  # HR_TMP Invoices Payable
+    # '1915136720',  # HR_TMP Booking
     # '1915132511', #                          HR_TMP Enquiry
+    '1497624294',  # Booking Sales Pipeline 2020/21
     '1858086349',  # Consent Form October 2021
     '1821249404',  # Subitems of Signalise Roadmap
     '1820193304',  # Signalise Roadmap
@@ -37,7 +40,6 @@ EXCLUDED_BOARD_IDS = [
     '1627893820',  # CCG Service Levels
     '1527500053',  # DOC Legal Interpreting
     '1509911608',  # DOC STTR Guidance
-    # '1497624294', #          Booking Sales Pipeline 2020/21
     '1497319722',  # DOC Why 2 Interpreters are needed info
     '1482864083',  # Subitems of Finance Requests
     '1482864064',  # Finance Requests
@@ -58,8 +60,11 @@ class MondayCollector(Collector):
     def boards(self):
         return self.monday.get_boards('id', 'name')
 
+    @cached_property
     def boards_dataframe(self) -> pd.DataFrame:
-        return pd.DataFrame([dict(board) for board in self.boards]).set_index('id')[['name']]
+        df = pd.DataFrame([dict(board) for board in self.boards]).set_index('id')[['name']]
+        df.index = df.index.astype(int)
+        return df
 
     @cached_property
     def items_by_boards(self):
@@ -67,27 +72,87 @@ class MondayCollector(Collector):
         for board in self.boards:
             if board.id in EXCLUDED_BOARD_IDS:
                 continue
-            print(board.name)
-            board_items = []
-            board_items = []
-            page = 1
-            chunk_size = 15
+            print(f"Fetching data for {board.name}")
 
-            items = board.get_items(get_column_values=True, limit=chunk_size, page=page)
-            while items:
-                print("+", end='')
-                board_items.append(items)
-                page = page + 1
-                items = board.get_items(get_column_values=True, limit=chunk_size, page=page)
-            boards[board.id] = board_items
+            boards[board.id] = self.get_items_from_board(board.id)
         return boards
+
+    @cached_property
+    def boards_dataframes(self):
+        all_boards = {}
+        for board_id, items in self.items_by_boards.items():
+            board_items = []
+            for item in items:
+                row = {}
+                for column_value in item['column_values']:
+                    # we need to restructure the data into something more tabular
+                    row[f"{clean_column_name(column_value['title'])}__{column_value['id']}"] = column_value['text']
+                    row['_board_id'] = board_id
+                    row['_item_name'] = item['name']
+                    row['_item_id'] = item['id']
+                board_items.append(row)
+            if not board_items:
+                # ignore boards with no rows
+                continue
+            df = pd.DataFrame(board_items).set_index('_item_name')
+            df = df.reindex(sorted(df.columns), axis=1)  # sort columns alphabetically for convenience
+            all_boards[board_id] = df
+        return all_boards
+
+    @staticmethod
+    def get_items_from_board(board_id: int) -> list:
+        """ Fetch all the items (rows) from a board
+        Ideally this would be done via the Moncli packages but it has some issues with casting values and API timeouts
+        so for now we roll out own
+        """
+        all_items = []
+        page = 1
+        current_ids = True
+
+        while current_ids:
+            # get 25 most recent Ids
+            items_per_page = 25
+            board_query = f'{{boards(ids:{board_id}) {{ name id description items (limit: {items_per_page}, page: {page}, newest_first: true,) {{ id }} }} }}'
+            data = {'query': board_query}
+
+            r = requests.post(url=API_URL, json=data, headers=HEADERS)  # make request
+            results = r.json()['data']['boards'][0]['items']
+            print(f"Found {len(results)} IDs from page {page}")
+            current_ids = [i['id'] for i in r.json()['data']['boards'][0]['items']]
+            if len(current_ids) > 0:
+                items_query = f"""
+          {{
+            items (ids: [{", ".join(current_ids)}] ) {{
+                  id
+                  name
+                  column_values{{title id type text }}
+              }}
+          }}
+          """
+                data = {'query': items_query}
+                r = requests.post(url=API_URL, json=data, headers=HEADERS)  # make request
+                result = r.json()
+                print(f"Found {len(result['data']['items'])} results in page {page}")
+                all_items.extend(result['data']['items'])
+                if len(result['data']['items']) < items_per_page:
+                    # we fetched a partial page so there's not point fetching more
+                    break
+                page = page + 1
+
+        return all_items
 
     @property
     def schema_name(self):
-        return "gsuite"
+        return "monday"
 
     def collect(self):
-        boards = self.boards
+        for board_id, board in self.boards_dataframes.items():
+            board_name = clean_column_name(self.boards_dataframe.loc[int(board_id)]['name'])
+            try:
+                self.save_dataframe(board, board_name)
+                print(f"Successfully saved {board_name}")
+            except Exception as e:
+                print(f"Could not save {board_name}", e)
 
 
 if __name__ == "__main__":
@@ -102,4 +167,4 @@ if __name__ == "__main__":
     collector = MondayCollector(db_engine)
     collector.collect()
 
-    print(collector.items_by_boards)
+    print(collector.boards_dataframes)

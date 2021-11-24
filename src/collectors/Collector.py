@@ -37,7 +37,7 @@ class Collector(ABC):
         """Do the fetching of data and saving it to the db"""
         pass
 
-    def save_dataframe(self, dataframe: pd.DataFrame, table_name: str) -> None:
+    def save_dataframe(self, dataframe: pd.DataFrame, table_name: str, dtypes: dict = {}) -> None:
         schema_name = None
         if self._db_engine.name == 'postgresql':
             """if it's sqlite for testing we don't want a schema, but otherwise we want each collector in a named 
@@ -50,7 +50,9 @@ class Collector(ABC):
         type_convert = {}
         dataframe = dataframe.convert_dtypes()
         for column_name, column_type in dataframe.dtypes.items():
-            if column_type == 'object':
+            if column_name in dtypes.keys():
+                type_convert[column_name] = dtypes[column_name]
+            elif column_type == 'object':
                 type_convert[column_name] = JSONB
             elif column_type == 'string':
                 try:

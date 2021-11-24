@@ -5,10 +5,33 @@
 
 
 ## Collectors
+Collectors fetch data from an external source (such as a CRM or spreadsheet).
+
+* They should only fetch data from one source
+* They should save data to a schema specific to the source they fetch from (e.g. gsuite, monday)
+* They should minimise manipulation of the data so that the data they save is as close as possible to the data 
+they fetched. If the data needs to be transformed that should happen in Reporting Views (see below)
 
 ## Reporting views
+Reporting Views are SQL views on the underlying schemas that are populated by the collectors. 
+
+They can combine data from multiple sources/schema and aggregate data to make it convenient for Workers 
+and other reporting to uses. 
+
 
 ## Workers
+Query the warehouse and do an action on one or more external services.
+
+### Workers must not save data to the data warehouse!
+The data warehouse should not be the canonical store for any data - save it somewhere else. Another database, Google sheets, Monday, etc.
+
+They should subclass `Worker` and should implement a 
+
+* `find_candidates` function which finds items to do work on - e.g. identify booked appointments without corresponding
+calendar events
+* `do_work` function which processes a single item (e.g. adding a calendar event and marking it as processed in the CRM)
+
+
 
 ## Standalone workers
 Standalone workers are like workers by they do not read from (or write to) the data warehouse.

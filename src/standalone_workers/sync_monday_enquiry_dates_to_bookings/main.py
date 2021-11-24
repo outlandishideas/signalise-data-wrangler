@@ -10,7 +10,7 @@ BOOKING_BOARD_ID = 1915136720
 BOOKING_BOARD_DATE_COLUMN_ID = 'text3'
 
 ENQUIRY_BOARD_START_COLUMN_ID = 'hour'
-ENQUIRY_BOARD_END_COLUMN_ID = 'hour1'
+ENQUIRY_BOARD_END_COLUMN_ID = 'hour_1'
 ENQUIRY_BOARD_DATE_COLUMN_ID = 'date4'
 
 
@@ -84,7 +84,7 @@ def get_dates_from_enquiries(enquiry_ids):
         end = column_value(enquiry, ENQUIRY_BOARD_END_COLUMN_ID)
         date = column_value(enquiry, ENQUIRY_BOARD_DATE_COLUMN_ID)
         enquiry_id = column_value(enquiry, 'item_id')
-        enquiry_dates[enquiry_id] = f"{date} {start}-{end}"
+        enquiry_dates[enquiry_id] = f"{date} {start}>>{end}"
 
     return enquiry_dates
 
@@ -105,8 +105,9 @@ def update_booking_date(booking_id: int, date: str):
 
 
 def column_value(item, column_id):
-    return [column['text'] for column in item['column_values'] if column['id'] == column_id][0]
+    text_values = [column['text'] for column in item['column_values'] if column['id'] == column_id]
+    return text_values[0] if len(text_values) > 0 else None
 
 
 if __name__ == '__main__':
-    sync_booking_dates({}, {})
+    sync_monday_enquiry_dates_to_bookings({}, {})
