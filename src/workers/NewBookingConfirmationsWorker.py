@@ -1,7 +1,7 @@
 from src.workers.Worker import Worker
 
 
-class CreateCalendarFromConfirmedMondayWorker(Worker):
+class NewBookingConfirmationsWorker(Worker):
     @property
     def name(self):
         return "CreateCalendarFromConfirmedMonday"
@@ -9,9 +9,9 @@ class CreateCalendarFromConfirmedMondayWorker(Worker):
     def find_candidates(self):
         # todo
         q = """
-        SELECT * FROM monday.bookings mb 
+        SELECT * FROM monday.hr_tmp_booking mb 
         LEFT JOIN gsuite.events ge ON description ~* ('BREF:' || mb.bookingref)
-        WHERE mb.status = 'done' 
+        WHERE mb.status = 'booking' 
         """
         return [1, 2]
 
@@ -21,5 +21,5 @@ class CreateCalendarFromConfirmedMondayWorker(Worker):
 
 
 if __name__ == "__main__":
-    worker = CreateCalendarFromConfirmedMondayWorker()
+    worker = NewBookingConfirmationsWorker()
     worker.do_all_work()
