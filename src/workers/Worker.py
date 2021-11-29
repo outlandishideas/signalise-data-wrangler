@@ -1,8 +1,16 @@
 import abc
 from abc import ABC
 
+from sqlalchemy import inspect
+from sqlalchemy.engine import Engine
+
 
 class Worker(ABC):
+
+    def __init__(self, db: Engine = None):
+        self.db = db.connect()
+        self._db_engine = db
+        self._db_inspector = inspect(db)
 
     @property
     @abc.abstractmethod
@@ -25,5 +33,6 @@ class Worker(ABC):
             self.work(candidate)
 
 if __name__ == "__main__":
+    from sqlalchemy import  create_engine
     worker = Worker()
     worker.do_all_work()
