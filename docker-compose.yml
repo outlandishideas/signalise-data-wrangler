@@ -1,0 +1,27 @@
+---
+
+version: "3.8"
+
+volumes:
+  pgdata:
+
+services:
+
+  database:
+    image: postgres:12
+    ports:
+      - "7654:5432"
+    environment:
+      - POSTGRES_PASSWORD=signalise
+      - POSTGRES_USER=signalise
+      - POSTGRES_DB=signalise
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    depends_on:
+      - database
+    build: .
+    command: python main.py
+    volumes:
+    - ./:/app

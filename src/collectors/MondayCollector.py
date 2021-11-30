@@ -10,7 +10,7 @@ from src.util import *
 import requests
 from moncli import client as MondayClient
 
-from Collector import Collector
+from .Collector import Collector
 
 from icecream import ic
 
@@ -21,12 +21,12 @@ API_URL = "https://api.monday.com/v2"
 HEADERS = {"Authorization": API_KEY}
 
 EXCLUDED_BOARD_IDS = [
-    '1922161518',  # HR_TMP Clients
-    '1922060379',  # HR_TMP Invoices Receivable
-    '1915224762',  # HR_TMP Invoices Payable
+    # '1922161518',  # HR_TMP Clients
+    # '1922060379',  # HR_TMP Invoices Receivable
+    # '1915224762',  # HR_TMP Invoices Payable
     # '1915136720',  # HR_TMP Booking
-    # '1915132511', #                          HR_TMP Enquiry
-    '1497624294',  # Booking Sales Pipeline 2020/21
+    # '1915132511',  # HR_TMP Enquiry
+    # '1497624294',  # Booking Sales Pipeline 2020/21
     '1858086349',  # Consent Form October 2021
     '1821249404',  # Subitems of Signalise Roadmap
     '1820193304',  # Signalise Roadmap
@@ -43,7 +43,7 @@ EXCLUDED_BOARD_IDS = [
     '1497319722',  # DOC Why 2 Interpreters are needed info
     '1482864083',  # Subitems of Finance Requests
     '1482864064',  # Finance Requests
-    '1482849221',  # Communication Professional Contacts
+    # '1482849221',  # Communication Professional Contacts
     '1476461845',  # DOC Booking process v2 July 2021
     '1462823210',  # Weekly Rota Schedule
 ]
