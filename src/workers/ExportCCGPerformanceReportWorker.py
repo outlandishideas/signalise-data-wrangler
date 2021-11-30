@@ -3,6 +3,9 @@ import pandas as pd
 from src.util import get_reporting_db_engine
 from src.workers.Worker import Worker
 
+def get_sla_level(request_time, start_time):
+    return start_time - request_time
+
 
 class ExportCCGPerformanceReportWorker(Worker):
 
@@ -12,7 +15,9 @@ class ExportCCGPerformanceReportWorker(Worker):
 
     def find_candidates(self):
         q = "SELECT * from reporting.ccg_performance_reporting_booking_pipeline_2020_21"
+
         legacy = pd.read_sql(q, self.db)
+        legacy['lev_calc'] = legacy.apply(lambda x: get_sla_level(x.col_1, x.col_2), axis=1)
 
         q = "SELECT * from reporting.ccg_performance_reporting_booking_pipeline_2020_21"
         new_boards = pd.read_sql(q, self.db)
