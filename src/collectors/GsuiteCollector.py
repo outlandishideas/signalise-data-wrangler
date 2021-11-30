@@ -13,7 +13,7 @@ from src.util import get_reporting_db_engine, prepare_db_for_collection
 
 SCOPES = [
     'https://www.googleapis.com/auth/calendar',
-    'https://www.googleapis.com/auth/contacts.readonly',
+    # 'https://www.googleapis.com/auth/contacts.readonly',
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/directory.readonly',
     'https://www.googleapis.com/auth/contacts.other.readonly',
@@ -124,7 +124,7 @@ class GsuiteCollector(Collector):
     def get_events_for_all_people(self, days_past=0, days_ahead=90):
         everyones_events = []
         for address in self.people_dataframe.query('metadata_source_type == "DOMAIN_PROFILE"').value:
-            if "outlandish.com" not in address:
+            if "signalise.coop" not in address:
                 continue
             print(f"Fetching events for {address}")
             everyones_events.extend(self.get_events_for_subject(address, days_past=0, days_ahead=90))
