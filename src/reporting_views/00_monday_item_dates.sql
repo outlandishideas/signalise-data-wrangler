@@ -11,7 +11,7 @@ END;
 
 
 
-CREATE OR REPLACE FUNCTION get_sla_from_duration(interval, text) RETURNS int
+CREATE OR REPLACE FUNCTION get_sla_from_duration(interval) RETURNS int
     LANGUAGE sql AS
 $$
 -- Takes a duration (between the request time and start of the request), and a status
@@ -20,17 +20,15 @@ $$
 -- or by returning special number for other codes
 -- - 404 could not find an interpreter; 400 for cancelled no fee, 402 cancelled fee
 SELECT CASE
-           WHEN $1 < INTERVAL '5 minutes' AND $2 = 'Booked' OR $2 = 'Completed'
+           WHEN $1 < INTERVAL '5 minutes'
                THEN 1
-           WHEN $1 < INTERVAL '30 minutes' AND $2 = 'Booked' OR $2 = 'Completed'
+           WHEN $1 < INTERVAL '30 minutes'
                THEN 2
-           WHEN $1 < INTERVAL '1 hour' AND $2 = 'Booked' OR $2 = 'Completed'
+           WHEN $1 < INTERVAL '1 hour'
                THEN 3
-           WHEN $1 < INTERVAL '1 day' AND $2 = 'Booked' OR $2 = 'Completed'
+           WHEN $1 < INTERVAL '1 day'
                THEN 4
-           WHEN $1 < INTERVAL '3 days' AND $2 = 'Booked' OR $2 = 'Completed'
-               THEN 5
-           ELSE NULL END;
+           ELSE 5 END;
 $$;
 
 
@@ -52,7 +50,19 @@ SELECT item_id__item_id                                                         
 FROM monday.hr_tmp_enquiry
     );
 
+CREATE or replace function met_sla_booking_time (timestamp, timestamp, timestamp) RETURNS bool
+    LANGUAGE sql
+    AS
 
+    'select false';
+    --calculate the gap between request and start to get level
+    --calculate the gap between request and booking to get booking time
+    --check SLA times per level to see if booking time is less than SLA
+
+
+;
+
+SELECT location__location, count(nacs_code__text4) from monday.ccg_framework_locations group by location__location order by count desc;
 
 CREATE OR REPLACE VIEW reporting.ccg_performance_reporting_booking_pipeline_2020_21 AS
 SELECT LPAD(EXTRACT(HOUR FROM start__hour)::TEXT, 2, '0') || ':' ||
@@ -63,14 +73,11 @@ SELECT LPAD(EXTRACT(HOUR FROM start__hour)::TEXT, 2, '0') || ':' ||
      , LPAD(EXTRACT(HOUR FROM deal_closed__date_confirmed8)::TEXT, 2, '0') || ':' ||
        LPAD(EXTRACT(MINUTES FROM deal_closed__date_confirmed8)::text, 2, '0')             appt_confirmation_time
      , deal_closed__date_confirmed8::DATE                                              AS appt_confirmation_date
-     , CASE
-           WHEN deal_closed__date_confirmed8 - booking_sales_pipeline_2020_21.creation_log__creation_log <
-                INTERVAL '1 hour' THEN TRUE
-           ELSE FALSE END                                                              AS confirmed_within_appropriate_level_timescale
+     , met_sla_booking_time(zip_date_hour(booking_date__date, start__hour), deal_closed__date_confirmed8, deal_closed__date_confirmed8)                                                              AS confirmed_within_appropriate_level_timescale
      , sales_contacts__connect_boards5                                                 AS booker_ref
-     , company__company                                                                AS practice_code
+     , (SELECT nacs_code__text4 from monday.ccg_framework_locations where location__location = location__location LIMIT 1)  as practice_code -- this should be looking up based on sales contact
      , location__location                                                              AS location
-     , booking_type__session_notes                                                     AS type_of_appointment_requested
+     , '?'                                                     AS type_of_appointment_requested
      , '?'                                                                             AS type_of_appointment_request_met
      , booking_type__session_notes                                                     AS details_of_request
      , type_of_professional__type_of_professional                                      AS language_professional
