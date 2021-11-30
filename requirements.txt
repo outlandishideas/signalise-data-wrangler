@@ -1,0 +1,9 @@
+google-api-python-client
+psycopg2-binary
+requests
+pandas
+IPython
+sqlalchemy
+python-dotenv
+moncli
+icecream
