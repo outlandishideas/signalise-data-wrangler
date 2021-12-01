@@ -25,6 +25,7 @@ def prepare_db_for_collection(db: Engine):
 def create_reporting_views(db: Engine):
     sql_files = (Path(__file__).parent / 'reporting_views').glob('*.sql')
     for path in sorted(sql_files):
+        print(path)
         db.execute(path.read_text())
 
 

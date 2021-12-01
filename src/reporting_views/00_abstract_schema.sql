@@ -149,9 +149,7 @@ CREATE TABLE ideal.enquiry
     FOREIGN KEY (location_id) REFERENCES ideal.locations,
     sales_contact_id            INT,
     FOREIGN KEY (sales_contact_id) REFERENCES ideal.sales_contacts,
-    estimated_number_professionals_needed INT,
-    requested
-
+    estimated_number_professionals_needed INT
 );
 
 

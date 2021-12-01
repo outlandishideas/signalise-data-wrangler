@@ -10,8 +10,8 @@ if __name__ == '__main__':
     prepare_db_for_collection(db)
     # gsuite = GsuiteCollector(db)
     # gsuite.collect()
-    monday = MondayCollector(db)
-    monday.collect()
-    # create_reporting_views(db)
+    # monday = MondayCollector(db)
+    # monday.collect()
+    create_reporting_views(db)
 
     # print(db.execute("SELECT * from reporting.events_by_attendee limit 10").fetchall())
