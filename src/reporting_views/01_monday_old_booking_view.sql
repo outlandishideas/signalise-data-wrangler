@@ -35,7 +35,8 @@ SELECT LPAD(EXTRACT(HOUR FROM start__hour)::TEXT, 2, '0') || ':' ||
      , '?'                                                                             AS action_taken_to_investigate_summary
      , '?'                                                                             AS level_of_interpreter_met
      , CASE
-           WHEN charge__status = 'Canc no fee' OR charge__status = 'Canc 50%% fee' OR
+           WHEN charge__status = 'Canc no fee' OR
+                charge__status = 'Canc 50%% fee' OR
                 charge__status = 'Cancelled Full Fee' THEN TRUE
            ELSE FALSE END                                                              AS booking_cancelled
      , CASE

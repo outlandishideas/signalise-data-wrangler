@@ -26,15 +26,15 @@ class ExportCCGPerformanceReportWorker(Worker):
         return "ExportCCGPerformanceReportWorker"
 
     def find_candidates(self):
-        q = "SELECT * FROM reporting.ccg_performance_reporting_booking_pipeline_2020_21_simple"
+        q = "SELECT * FROM reporting.ccg_performance_reporting_booking_pipeline_2020_21"
 
         legacy = pd.read_sql(q, self.db)
         legacy['sla_level'] = legacy.apply(lambda x: get_sla_level(x.request_datetime, x.booking_start_datetime), axis=1)
 
-        q = "SELECT * FROM reporting.ccg_performance_reporting_booking_pipeline_2020_21"
-        new_boards = pd.read_sql(q, self.db)
-
-        all_bookings = pd.concat([legacy, new_boards])
+        # q = "SELECT * FROM reporting.ccg_performance_reporting_booking_pipeline_2020_21"
+        # new_boards = pd.read_sql(q, self.db)
+        #
+        all_bookings = pd.concat([legacy])
         return [all_bookings]
 
     def work(self, candidate: pd.DataFrame):
