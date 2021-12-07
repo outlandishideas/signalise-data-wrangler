@@ -27,27 +27,35 @@ EXCLUDED_BOARD_IDS = [
     # '1915136720',  # HR_TMP Booking
     # '1915132511',  # HR_TMP Enquiry
     # '1497624294',  # Booking Sales Pipeline 2020/21
-    '1858086349',  # Consent Form October 2021
-    '1821249404',  # Subitems of Signalise Roadmap
-    '1820193304',  # Signalise Roadmap
-    '1714710739',  # TEST invoice board
-    '1698629932',  # TEST of Booking Sales Pipeline 2020/21
-    '1684090137',  # CCG Framework Locations
-    '1671904866',  # Customer Feedback Survey
+    # '1858086349',  # Consent Form October 2021
+    # '1821249404',  # Subitems of Signalise Roadmap
+    # '1820193304',  # Signalise Roadmap
+    # '1714710739',  # TEST invoice board
+    # '1698629932',  # TEST of Booking Sales Pipeline 2020/21
+    # '1684090137',  # CCG Framework Locations
+    # '1671904866',  # Customer Feedback Survey
     '1649557653',  # Calls
-    '1639560580',  # Booking Form 2020/21
-    '1638387981',  # Deaf Users
-    '1627893820',  # CCG Service Levels
-    '1527500053',  # DOC Legal Interpreting
-    '1509911608',  # DOC STTR Guidance
-    '1497319722',  # DOC Why 2 Interpreters are needed info
-    '1482864083',  # Subitems of Finance Requests
-    '1482864064',  # Finance Requests
+    # '1639560580',  # Booking Form 2020/21
+    # '1638387981',  # Deaf Users
+    # '1627893820',  # CCG Service Levels
+    # '1527500053',  # DOC Legal Interpreting
+    # '1509911608',  # DOC STTR Guidance
+    # '1497319722',  # DOC Why 2 Interpreters are needed info
+    # '1482864083',  # Subitems of Finance Requests
+    # '1482864064',  # Finance Requests
     # '1482849221',  # Communication Professional Contacts
-    '1476461845',  # DOC Booking process v2 July 2021
-    '1462823210',  # Weekly Rota Schedule
+    # '1476461845',  # DOC Booking process v2 July 2021
+    # '1462823210',  # Weekly Rota Schedule
 ]
 
+BOARDS_TO_FETCH = [
+    {'id': '1401246000', 'name': 'sales_contacts'},
+    {'id': '1497624294', 'name': 'booking_sales_pipeline_2020_21'},
+    {'id': '1684090137', 'name': 'ccg_framework_locations'},
+    {'id': '1482849221', 'name': 'communication_professional_contacts'},
+    {'id': '1915132511', 'name': 'hr_tmp_enquiry'},
+    {'id': '1915136720', 'name': 'hr_tmp_booking'},
+]
 
 class MondayCollector(Collector):
 
@@ -58,11 +66,11 @@ class MondayCollector(Collector):
 
     @cached_property
     def boards(self):
-        return self.monday.get_boards('id', 'name')
+        return BOARDS_TO_FETCH
 
     @cached_property
     def boards_dataframe(self) -> pd.DataFrame:
-        df = pd.DataFrame([dict(board) for board in self.boards]).set_index('id')[['name']]
+        df = pd.DataFrame([board for board in self.boards]).set_index('id')[['name']]
         df.index = df.index.astype(int)
         return df
 
@@ -70,11 +78,7 @@ class MondayCollector(Collector):
     def items_by_boards(self):
         boards = {}
         for board in self.boards:
-            if board.id in EXCLUDED_BOARD_IDS:
-                continue
-            print(f"Fetching data for {board.name}")
-
-            boards[board.id] = self.get_items_from_board(board.id)
+            boards[board['id']] = self.get_items_from_board(board['id'])
         return boards
 
     @cached_property
