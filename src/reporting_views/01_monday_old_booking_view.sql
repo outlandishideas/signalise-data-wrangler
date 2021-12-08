@@ -2,7 +2,7 @@
 DROP VIEW IF EXISTS reporting.ccg_performance_reporting_booking_pipeline_2020_21_simple;
 CREATE OR REPLACE VIEW reporting.ccg_performance_reporting_booking_pipeline_2020_21_simple AS
 SELECT zip_date_hour(booking_date__date, start__hour)                                  AS  booking_start_datetime
-SELECT zip_date_hour(booking_date__date, end__hour9)                                  AS  booking_end_datetime
+     , zip_date_hour(booking_date__date, end__hour9)                                  AS  booking_end_datetime
      , zip_date_hour(deal_closed__date_confirmed8, deal_closed__date_confirmed8)       AS  deal_closed_datetime
      , creation_log__creation_log                                                      AS  request_datetime
      , sales_contacts__connect_boards5                                                 AS  booker_ref
@@ -34,9 +34,16 @@ SELECT zip_date_hour(booking_date__date, end__hour9)                            
      , CASE
            WHEN charge__status = 'Canc no fee' THEN '0'
            ELSE quote_exc_vat__quote_exc_vat END                                       AS  appt_fee
-     , zip_date_hour(booking_date__date, end__hour9) -
-       zip_date_hour(booking_date__date, start__hour)                                  AS  length_of_appt_booked
-     , '?'                                                                             AS  start_of_appt_took_place_in_appropriate_timescale
+     , CASE
+           WHEN end__hour9 IS NULL THEN
+               NULL
+           WHEN EXTRACT(HOUR FROM end__hour9) = '00'
+            AND EXTRACT(MINUTE FROM end__hour9) = '00' THEN
+               NULL
+           ELSE
+               zip_date_hour(booking_date__date, end__hour9) -
+               zip_date_hour(booking_date__date, start__hour)
+       END                                  AS  length_of_appt_booked
      , zip_date_hour(booking_date__date, start__hour)                                  AS  actual_start_time
      , CASE
            WHEN actual_end_time__hour2 IS NULL THEN
@@ -66,7 +73,8 @@ LEFT JOIN monday.ccg_framework_locations AS ccg
 
 UNION
 
-SELECT zip_date_hour(booking_date__date, start__hour)                                  AS  booking_start_datetime
+SELECT zip_date_hour(booking_date__date, start__hour)                               AS  booking_start_datetime
+     , zip_date_hour(booking_date__date, end__hour9)                                  AS  booking_end_datetime
      , zip_date_hour(deal_closed__date_confirmed8, deal_closed__date_confirmed8)       AS  deal_closed_datetime
      , creation_log__creation_log                                                      AS  request_datetime
      , sales_contacts__connect_boards5                                                 AS  booker_ref
@@ -98,9 +106,16 @@ SELECT zip_date_hour(booking_date__date, start__hour)                           
      , CASE
            WHEN charge__status = 'Canc no fee' THEN '0'
            ELSE quote_exc_vat__quote_exc_vat END                                       AS  appt_fee
-     , zip_date_hour(booking_date__date, end__hour9) -
-       zip_date_hour(booking_date__date, start__hour)                                  AS  length_of_appt_booked
-     , '?'                                                                             AS  start_of_appt_took_place_in_appropriate_timescale
+     , CASE
+           WHEN end__hour9 IS NULL THEN
+               NULL
+           WHEN EXTRACT(HOUR FROM end__hour9) = '00'
+            AND EXTRACT(MINUTE FROM end__hour9) = '00' THEN
+               NULL
+           ELSE
+               zip_date_hour(booking_date__date, end__hour9) -
+               zip_date_hour(booking_date__date, start__hour)
+       END                                                                             AS  length_of_appt_booked
      , zip_date_hour(booking_date__date, start__hour)                                  AS  actual_start_time
      , CASE
            WHEN actual_end_time__hour2 IS NULL THEN

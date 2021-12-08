@@ -25,6 +25,9 @@ if __name__ == '__main__':
     if datetime.now().day == 1:
         worker.last_month()
 
+    worker.start = datetime(2021,10,1)
+    worker.end = datetime(2021,10,31)
+
     worker.do_all_work()
 
     # print(db.execute("SELECT * from reporting.events_by_attendee limit 10").fetchall())
