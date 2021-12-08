@@ -13,7 +13,7 @@ SPREADSHEET_COLUMNS = {
     "confirmed_within_level_timescale": "Confirmed within appropriate Level timescale",
     "booker_ref": "Booker ref",
     "practice_code": "Practice Code",
-    "venue_of_appointment": "Venue of appointment (inc. video)",
+    "location": "Venue of appointment (inc. video)",
     "type_of_appointment_requested": "Type of appointment requested",
     "type_of_appointment_request_met": "Type of appointment request met?",
     "details_of_request": "Details of request",
@@ -172,6 +172,37 @@ def get_cancellation_status(cancelled, fee):
     else:
         return 'Not cancelled'
 
+def get_appointment_type(location):
+    """
+    Output the appointment type based on location
+
+    If there is a location, then the requested appointment type
+    is "Face to Face", if there is no location, then it is "N/A"
+
+    :param location: location of appointment
+    :return:
+    """
+    if location:
+        return "Face to face"
+    else:
+        return 'N/A'
+
+def get_appointment_type_met(location):
+    """
+    Output if the appointment type was met
+
+    If there is a location, then the requested appointment type
+    was "Face to face" and we can
+    say "Yes Face to face", if there is no location, then it is "N/A".
+
+    :param location: location of appointment
+    :return:
+    """
+    if location:
+        return "Yes Face to face"
+    else:
+        return 'N/A'
+
 
 class ExportCCGPerformanceReportWorker(Worker):
 
@@ -212,9 +243,9 @@ class ExportCCGPerformanceReportWorker(Worker):
                 NULL AS confirmed_within_level_timescale,
                 booker_ref,
                 practice_code,
-                location AS venue_of_appointment,
-                type_of_appointment_requested,
-                type_of_appointment_request_met,
+                location,
+                NULL AS type_of_appointment_requested,
+                NULL AS type_of_appointment_request_met,
                 details_of_request,
                 language_professional,
                 CASE 
@@ -243,8 +274,8 @@ class ExportCCGPerformanceReportWorker(Worker):
                     ELSE
                         'No'
                 END AS sex_pref_met,
-                ooa_interpreter_requested,
-                ooa_request_met,
+                'No' AS ooa_interpreter_requested,
+                'N/A' AS ooa_request_met,
                 interpreter_ref,
                 CASE 
                     WHEN booking_cancelled THEN
@@ -253,7 +284,7 @@ class ExportCCGPerformanceReportWorker(Worker):
                 level_of_interpreter_met,
                 booking_cancelled,
                 appt_fee,
-                length_of_appt_booked,
+                to_char(length_of_appt_booked, 'FMHH24:MI') AS length_of_appt_booked ,
                 NULL AS start_of_appt_took_place_in_appropriate_timescale,
                 to_char(booking_start_datetime, 'HH24:MI') AS actual_start_time,
                 CASE 
@@ -308,6 +339,8 @@ class ExportCCGPerformanceReportWorker(Worker):
                 legacy['start_of_appt_took_place_in_appropriate_timescale'] = legacy.apply(lambda x: get_start_within_timescale(x.request_datetime, x.booking_start_datetime), axis=1)
                 legacy['level_of_interpreter_met'] = legacy.apply(lambda x: get_level_of_interpreter_met(x.request_datetime, x.booking_start_datetime), axis=1)
                 legacy['booking_cancelled'] = legacy.apply(lambda x: get_cancellation_status(x.booking_cancelled, x.appt_fee), axis=1)
+                legacy['type_of_appointment_requested'] = legacy.apply(lambda x: get_appointment_type(x.location), axis=1)
+                legacy['type_of_appointment_request_met'] = legacy.apply(lambda x: get_appointment_type_met(x.location), axis=1)
 
             legacy = legacy.drop(columns=['request_datetime', 'booking_start_datetime' ,'deal_closed_datetime']).rename(columns=SPREADSHEET_COLUMNS)
 
