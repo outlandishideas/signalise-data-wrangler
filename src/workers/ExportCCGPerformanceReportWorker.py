@@ -54,7 +54,7 @@ def get_sla_level(request_time, start_time):
     """
 
     diff = start_time - request_time
-    if diff < timedelta(minutes=5):
+    if diff < timedelta(minutes=30):
         return 1
     elif diff < timedelta(hours=24*1):
         return 2
@@ -176,13 +176,14 @@ def get_appointment_type(location):
     """
     Output the appointment type based on location
 
-    If there is a location, then the requested appointment type
-    is "Face to Face", if there is no location, then it is "N/A"
+    If there is a location and the location is not Remote,
+    then the requested appointment type is "Face to Face",
+    if there is no location, then it is "N/A"
 
     :param location: location of appointment
     :return:
     """
-    if location:
+    if location and location != 'Remote':
         return "Face to face"
     else:
         return 'N/A'
@@ -191,17 +192,50 @@ def get_appointment_type_met(location):
     """
     Output if the appointment type was met
 
-    If there is a location, then the requested appointment type
-    was "Face to face" and we can
+    If there is a location and the location is not Remote, then
+    the requested appointment type was "Face to face" and we can
     say "Yes Face to face", if there is no location, then it is "N/A".
 
     :param location: location of appointment
     :return:
     """
-    if location:
-        return "Yes Face to face"
-    else:
+    if location is None:
         return 'N/A'
+    elif location is '':
+        return 'N/A'
+    elif location == 'Remote':
+        return 'N/A'
+    elif location == 'n/a':
+        return 'N/A'
+    elif location == 'N/A':
+        return 'N/A'
+    else:
+        return "Yes Face to face"
+
+
+def get_interpreter_type(interpreter):
+    """
+    Output the required output for interpreter
+
+    The value for the interpreter field, is specific for CCGs
+    and depends on what the value from monday.com is.
+
+    :param location: location of appointment
+    :return:
+    """
+    if interpreter == 'Interpreter':
+        return 'BSL Interpreter – TSLI'
+    elif interpreter == 'Trainee interpreter':
+        return 'BSL Interpreter – TSLI'
+    elif interpreter == 'Translator':
+        return 'BSL Translator'
+    elif interpreter == 'Deafblind interpreter':
+        return 'Deafblind Interpreter”'
+    elif interpreter == 'ENT':
+        return 'Electronic Notetaker'
+    else:
+        return interpreter
+
 
 
 class ExportCCGPerformanceReportWorker(Worker):
@@ -341,6 +375,7 @@ class ExportCCGPerformanceReportWorker(Worker):
                 legacy['booking_cancelled'] = legacy.apply(lambda x: get_cancellation_status(x.booking_cancelled, x.appt_fee), axis=1)
                 legacy['type_of_appointment_requested'] = legacy.apply(lambda x: get_appointment_type(x.location), axis=1)
                 legacy['type_of_appointment_request_met'] = legacy.apply(lambda x: get_appointment_type_met(x.location), axis=1)
+                legacy['language_professional'] = legacy.apply(lambda x: get_interpreter_type(x.language_professional), axis=1)
 
             legacy = legacy.drop(columns=['request_datetime', 'booking_start_datetime' ,'deal_closed_datetime']).rename(columns=SPREADSHEET_COLUMNS)
 
