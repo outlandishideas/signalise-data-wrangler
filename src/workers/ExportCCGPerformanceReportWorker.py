@@ -122,7 +122,7 @@ def get_start_within_timescale(request_time, start_time):
     """
     return "Yes Level {}".format(get_sla_level(request_time, start_time))
 
-def get_level_of_interpreter_met(request_time, start_time):
+def get_level_of_interpreter_met(met, request_time, start_time):
     """
     Get the output for whether the person was of the correct level.
 
@@ -133,7 +133,12 @@ def get_level_of_interpreter_met(request_time, start_time):
     :param start_time:   The time of the booking
     :return:
     """
-    return "Yes Level {}".format(get_sla_level(request_time, start_time))
+    level = get_sla_level(request_time, start_time)
+
+    if met:
+        return "Yes Level {}".format(level)
+
+    return "No Level {}".format(level)
 
 def get_cost_from_appt_fee(fee):
     """
@@ -172,45 +177,37 @@ def get_cancellation_status(cancelled, fee):
     else:
         return 'Not cancelled'
 
-def get_appointment_type(location):
+def get_appointment_type(type):
     """
     Output the appointment type based on location
 
-    If there is a location and the location is not Remote,
-    then the requested appointment type is "Face to Face",
-    if there is no location, then it is "N/A"
+    Using the f2f___remote column from monday.com we can determine
+    the type of booking required.
 
     :param location: location of appointment
     :return:
     """
-    if location and location != 'Remote':
+    if type == 'F2F':
         return "Face to face"
+    elif type == 'VRS':
+        return "Video"
     else:
         return 'N/A'
 
-def get_appointment_type_met(location):
+def get_appointment_type_met(type):
     """
     Output if the appointment type was met
 
-    If there is a location and the location is not Remote, then
-    the requested appointment type was "Face to face" and we can
-    say "Yes Face to face", if there is no location, then it is "N/A".
+    If the type is N/A then return N/A otherwise
+    return Yes {type}
 
     :param location: location of appointment
     :return:
     """
-    if location is None:
-        return 'N/A'
-    elif location is '':
-        return 'N/A'
-    elif location == 'Remote':
-        return 'N/A'
-    elif location == 'n/a':
-        return 'N/A'
-    elif location == 'N/A':
+    if type == 'N/A':
         return 'N/A'
     else:
-        return "Yes Face to face"
+        return "Yes {}".format(type)
 
 
 def get_interpreter_type(interpreter):
@@ -224,7 +221,7 @@ def get_interpreter_type(interpreter):
     :return:
     """
     if interpreter == 'Interpreter':
-        return 'BSL Interpreter – TSLI'
+        return 'BSL Interpreter – RSLI'
     elif interpreter == 'Trainee interpreter':
         return 'BSL Interpreter – TSLI'
     elif interpreter == 'Translator':
@@ -278,7 +275,7 @@ class ExportCCGPerformanceReportWorker(Worker):
                 booker_ref,
                 practice_code,
                 location,
-                NULL AS type_of_appointment_requested,
+                type_of_appointment_requested,
                 NULL AS type_of_appointment_request_met,
                 details_of_request,
                 language_professional,
@@ -320,9 +317,14 @@ class ExportCCGPerformanceReportWorker(Worker):
                 appt_fee,
                 to_char(length_of_appt_booked, 'FMHH24:MI') AS length_of_appt_booked ,
                 NULL AS start_of_appt_took_place_in_appropriate_timescale,
-                to_char(booking_start_datetime, 'HH24:MI') AS actual_start_time,
                 CASE 
-                    WHEN actual_end_time IS NULL THEN 
+                    WHEN actual_start_time IS NULL THEN 
+                        'n/a'
+                    ELSE 
+                        to_char(actual_start_time, 'HH24:MI') 
+                END AS actual_start_time,
+                CASE 
+                    WHEN actual_start_time IS NULL THEN 
                         'n/a'
                     ELSE 
                         to_char(actual_end_time, 'HH24:MI') 
@@ -371,10 +373,10 @@ class ExportCCGPerformanceReportWorker(Worker):
                 legacy['appt_fee'] = legacy.apply(lambda x: get_cost_from_appt_fee(x.appt_fee), axis=1)
                 legacy['interpreter_present_within_level_timescale'] = legacy.apply(lambda x: get_present_within_timescale(x.request_datetime, x.booking_start_datetime), axis=1)
                 legacy['start_of_appt_took_place_in_appropriate_timescale'] = legacy.apply(lambda x: get_start_within_timescale(x.request_datetime, x.booking_start_datetime), axis=1)
-                legacy['level_of_interpreter_met'] = legacy.apply(lambda x: get_level_of_interpreter_met(x.request_datetime, x.booking_start_datetime), axis=1)
+                legacy['level_of_interpreter_met'] = legacy.apply(lambda x: get_level_of_interpreter_met(x.level_of_interpreter_met, x.request_datetime, x.booking_start_datetime), axis=1)
                 legacy['booking_cancelled'] = legacy.apply(lambda x: get_cancellation_status(x.booking_cancelled, x.appt_fee), axis=1)
-                legacy['type_of_appointment_requested'] = legacy.apply(lambda x: get_appointment_type(x.location), axis=1)
-                legacy['type_of_appointment_request_met'] = legacy.apply(lambda x: get_appointment_type_met(x.location), axis=1)
+                legacy['type_of_appointment_requested'] = legacy.apply(lambda x: get_appointment_type(x.type_of_appointment_requested), axis=1)
+                legacy['type_of_appointment_request_met'] = legacy.apply(lambda x: get_appointment_type_met(x.type_of_appointment_requested), axis=1)
                 legacy['language_professional'] = legacy.apply(lambda x: get_interpreter_type(x.language_professional), axis=1)
 
             legacy = legacy.drop(columns=['request_datetime', 'booking_start_datetime' ,'deal_closed_datetime']).rename(columns=SPREADSHEET_COLUMNS)
