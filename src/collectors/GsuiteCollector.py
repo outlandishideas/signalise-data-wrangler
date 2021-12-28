@@ -24,7 +24,11 @@ SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')  # You should
 if SERVICE_ACCOUNT_FILE:
     CREDENTIALS = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 else:
-    CREDENTIALS = service_account.Credentials(scopes=SCOPES)
+    info = {
+        'client_email': os.getenv('CLIENT_EMAIL', 'data-wrangler-service@data-wrangler-333713.iam.gserviceaccount.com'),
+        'token_uri': os.getenv('OAUTH_TOKEN_URI', "https://oauth2.googleapis.com/token")
+    }
+    CREDENTIALS = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
 
 class GsuiteCollector(Collector):
     _people_dataframe: pd.DataFrame
