@@ -21,8 +21,10 @@ SCOPES = [
 ]
 dotenv.load_dotenv()
 SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')  # You should make it an environment variable
-CREDENTIALS = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-
+if SERVICE_ACCOUNT_FILE:
+    CREDENTIALS = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+else:
+    CREDENTIALS = service_account.Credentials(scopes=SCOPES)
 
 class GsuiteCollector(Collector):
     _people_dataframe: pd.DataFrame
